@@ -22,17 +22,12 @@ const AIAlerts = ({ token }) => {
   useEffect(() => {
     fetchAlerts();
 
-    // SSE Setup
-    const eventSource = new EventSource('http://localhost:8080/api/alerts/stream', {
-      withCredentials: true
-    });
+    // Polling every 30 seconds since we can't modify the backend to support SSE with JWT in URL
+    const interval = setInterval(() => {
+      fetchAlerts();
+    }, 30000);
 
-    eventSource.addEventListener('alert-update', (event) => {
-      const updatedAlert = JSON.parse(event.data);
-      setAlerts(prev => prev.map(a => a.id === updatedAlert.id ? updatedAlert : a));
-    });
-
-    return () => eventSource.close();
+    return () => clearInterval(interval);
   }, [token]);
 
   const handleAction = async (id, action) => {
@@ -105,9 +100,3 @@ const AIAlerts = ({ token }) => {
         )}
       </div>
     </div>
-  );
-};
-
-export default AIAlerts;
-
-
