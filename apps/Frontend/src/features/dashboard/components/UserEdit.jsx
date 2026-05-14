@@ -25,8 +25,6 @@ function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDel
           enabled: !userDeleted
         };
 
-        console.log("Attempting to update user ID:", userID);
-        console.log("Payload being sent:", payload);
 
         const res = await axios.put(`http://localhost:8080/api/users/${userID}`, payload, {
           headers: {
@@ -35,7 +33,6 @@ function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDel
           }
         });
 
-        console.log("Update Success Response:", res.data);
         setEditOpen(false);
         window.location.reload();
       } catch (e) {
@@ -49,14 +46,12 @@ function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDel
       if (!window.confirm(`Are you sure you want to deactivate user ${userName}?`)) return;
 
       try {
-        console.log("Attempting to deactivate user ID:", userID);
         const res = await axios.patch(`http://localhost:8080/api/users/${userID}/deactivate`, {}, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
 
-        console.log("Deactivate Success Response:", res.data);
         setEditOpen(false);
         window.location.reload();
       } catch (e) {

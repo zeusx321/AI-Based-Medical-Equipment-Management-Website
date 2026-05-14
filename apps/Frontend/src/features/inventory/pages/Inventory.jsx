@@ -39,7 +39,6 @@ function Inventory() {
       );
       setDevices(res.data.content || res.data);
     } catch (e) {
-      console.log("Error fetching devices", e);
     }
   };
 
@@ -53,7 +52,6 @@ function Inventory() {
       );
       setDepartments(res.data.content || res.data);
     } catch (e) {
-      console.log("Error fetching departments", e);
     }
   };
 

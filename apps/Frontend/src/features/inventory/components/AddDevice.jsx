@@ -49,7 +49,6 @@ function AddDevice({ addOpen, setAddOpen, departments, refreshDevices }) {
         purchaseDate: '', warrantyExpiryDate: '', lastMaintenanceDate: '', nextMaintenanceDate: ''
       });
     } catch (error) {
-      console.log("Error adding device", error);
     }
   };
 

@@ -48,7 +48,6 @@ function ChatBot({ username }) {
       setChat((prevChat) => [...prevChat, response.data]);
       setAiThinking(false);
     } catch (error) {
-      console.log(error);
       setAiThinking(false);
     }
   };
@@ -57,7 +56,6 @@ function ChatBot({ username }) {
     sessionStorage.setItem("chatbot_chat", JSON.stringify(chat));
     sessionStorage.setItem("chatbot_sessionId", sessionId);
 
-    console.log("Chat updated:", chat);
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }

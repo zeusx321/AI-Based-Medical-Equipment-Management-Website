@@ -32,7 +32,6 @@ function AdminRole() {
 
         setAllUsers(result.data);
       } catch (e) {
-        console.log("errrrr " + e);
       }
     };
 

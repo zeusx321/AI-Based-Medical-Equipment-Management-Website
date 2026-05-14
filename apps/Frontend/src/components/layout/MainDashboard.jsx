@@ -24,7 +24,6 @@ function MainDashboard() {
   } catch (e) {
     localStorage.removeItem("user");
   }
-  console.log(userData);
 
   return (
     <div>

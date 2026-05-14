@@ -3,7 +3,6 @@ import { Navigate } from "react-router-dom";
 
 function ProtectedRoute({ children, AllowRole }) {
   const userData = JSON.parse(localStorage.getItem("user"));
-  console.log("Protected Route Check - User Roles:", userData?.roles, "Required Role:", AllowRole);
 
   if (!userData) return <Navigate to="/login" />;
 
