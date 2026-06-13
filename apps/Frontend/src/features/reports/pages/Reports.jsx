@@ -133,7 +133,7 @@ function ReportModal({ device, token, onClose }) {
         .join(". ");
 
       const res = await axios.post(
-        "http://localhost:8080/api/ai/report/generate",
+        "/api/ai/report/generate",
         {
           sessionId,
           reportType: "DEVICE_REVIEW",
@@ -377,7 +377,7 @@ export default function Reports() {
       try {
         setLoading(true);
         const res = await axios.get(
-          "http://localhost:8080/api/medical-devices?size=1000",
+          "/api/medical-devices?size=1000",
           { headers: { Authorization: `Bearer ${token}` } },
         );
         setDevices(res.data.content || res.data);

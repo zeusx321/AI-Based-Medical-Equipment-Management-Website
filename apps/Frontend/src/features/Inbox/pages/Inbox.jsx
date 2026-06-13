@@ -33,35 +33,52 @@ function Inbox() {
   // Fetch real users from database
   useEffect(() => {
     const fetchUsers = async () => {
+      const currentUser = JSON.parse(localStorage.getItem("user")) || {};
+      const token = localStorage.getItem("token");
+      let dbUsersList = [];
+
       try {
-        const token = localStorage.getItem("token");
-        const currentUser = JSON.parse(localStorage.getItem("user"));
-        
-        const response = await axios.get("http://localhost:8080/api/users", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        // Filter out current user and map to contact structure
-        const dbUsers = response.data
-          .filter(u => u.username !== currentUser.username)
-          .map((u, index) => ({
-            id: u.id,
-            name: u.username,
-            role: u.role || "Staff",
-            status: "online", // Mock status
-            lastMessage: "No messages yet",
-            time: "",
-            unread: 0,
-            color: COLORS[index % COLORS.length]
-          }));
-        
-        setContacts(dbUsers);
-        if (dbUsers.length > 0) setSelectedContact(dbUsers[0]);
-        setLoading(false);
+        if (token) {
+          const response = await axios.get("/api/users", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (Array.isArray(response.data)) {
+            dbUsersList = response.data;
+          }
+        }
       } catch (err) {
-        console.error("Error fetching users:", err);
-        setLoading(false);
+        console.warn("Error fetching users from database, will fall back to mock users:", err);
       }
+
+      // Filter out the current user
+      let finalUsers = dbUsersList.filter(u => u.username !== currentUser.username);
+
+      // If the list is empty (no other users in database, or failed to fetch), use mock users fallback
+      if (finalUsers.length === 0) {
+        const mockUsers = [
+          { id: 991, username: "admin", email: "admin@hospital.com", role: "Admin" },
+          { id: 992, username: "biomed_tech", email: "biomed@hospital.com", role: "Biomedical Tech" },
+          { id: 993, username: "dr_sarah", email: "sarah@hospital.com", role: "Doctor" },
+          { id: 994, username: "nurse_john", email: "john@hospital.com", role: "Nurse" },
+          { id: 995, username: "dr_roma", email: "roma@hospital.com", role: "Doctor" }
+        ];
+        finalUsers = mockUsers.filter(u => u.username !== currentUser.username);
+      }
+
+      const contactsMapped = finalUsers.map((u, index) => ({
+        id: u.id,
+        name: u.username,
+        role: u.role || (u.id === 991 ? "Admin" : u.id === 992 ? "Biomedical Tech" : "Staff"),
+        status: "online",
+        lastMessage: "No messages yet",
+        time: "",
+        unread: 0,
+        color: COLORS[index % COLORS.length]
+      }));
+
+      setContacts(contactsMapped);
+      if (contactsMapped.length > 0) setSelectedContact(contactsMapped[0]);
+      setLoading(false);
     };
 
     fetchUsers();

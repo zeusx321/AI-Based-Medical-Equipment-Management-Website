@@ -13,7 +13,7 @@ function PredictionModal({ device, token, onClose }) {
         setError(null);
 
         const response = await axios.get(
-          `http://localhost:8080/api/ai/device-predictions/${device.id}`,
+          `/api/ai/device-predictions/${device.id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },

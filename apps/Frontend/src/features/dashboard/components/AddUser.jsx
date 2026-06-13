@@ -10,7 +10,7 @@ function AddUser({addOpen, setAddOpen, userName, userRole, userEmail, userDelete
 
     const updateRole = async () => {
       try{
-        const res = await axios.put(`http://localhost:8080/api/users/${userID}`, {
+        const res = await axios.put(`/api/users/${userID}`, {
           headers: {
             Authorization: `Bearer ${token}`
           },

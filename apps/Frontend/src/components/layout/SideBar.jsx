@@ -7,6 +7,7 @@ import { settingAboutPages } from "../../constants";
 import textLogo from "../../assets/Logo-Text.svg";
 import menuIcon from "../../assets/Menu.svg";
 import { useTheme } from "../../context/ThemeContext";
+import { getHighestRole, getDashboardPath } from "../../utils/roleUtils";
 import "../../index.css";
 
 const SideBar = ({ menu, setMenu }) => {
@@ -46,26 +47,48 @@ const SideBar = ({ menu, setMenu }) => {
         <div className="pr-2 flex flex-col gap-5 flex-1">
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-2">
-              {mainPages.map((items) => (
-                <Link key={items.key} to={items.url}>
-                  <div
-                    className={`${pagesStyle}
-                    ${location.pathname.includes(items.url) ? "bg-color-gray2" : "bg-transparent"} `}
-                  >
+              {mainPages.map((items) => {
+                let targetUrl = items.url;
+                if (items.title === 'Dashboard') {
+                  const savedUser = localStorage.getItem("user");
+                  if (savedUser && savedUser !== "undefined") {
+                    try {
+                      const userObj = JSON.parse(savedUser);
+                      const highestRole = getHighestRole(userObj.roles);
+                      if (highestRole === "ROLE_ADMIN") {
+                        targetUrl = "dashboard/adminrole";
+                      } else if (highestRole === "ROLE_USER") {
+                        targetUrl = "dashboard/userrole";
+                      } else {
+                        targetUrl = "dashboard/biomedrole";
+                      }
+                    } catch (e) {
+                      console.error("Failed to parse user roles in sidebar:", e);
+                    }
+                  }
+                }
+                const isActive = location.pathname.includes(targetUrl);
+                return (
+                  <Link key={items.key} to={targetUrl}>
                     <div
-                      className={`absolute h-7 w-[6px] bg-color-purple -left-[22px] rounded-e-[4px]  
-                      ${location.pathname.includes(items.url) ? "bg-color-purple" : "bg-transparent"}  
-                      `}
-                    ></div>
-                    <img
-                      src={items.icon}
-                      alt={items.title}
-                      className="w-[15px]"
-                    />
-                    <h3 className="text-[14.5px]">{items.title}</h3>
-                  </div>
-                </Link>
-              ))}
+                      className={`${pagesStyle}
+                      ${isActive ? "bg-color-gray2" : "bg-transparent"} `}
+                    >
+                      <div
+                        className={`absolute h-7 w-[6px] bg-color-purple -left-[22px] rounded-e-[4px]  
+                        ${isActive ? "bg-color-purple" : "bg-transparent"}  
+                        `}
+                      ></div>
+                      <img
+                        src={items.icon}
+                        alt={items.title}
+                        className="w-[15px]"
+                      />
+                      <h3 className="text-[14.5px]">{items.title}</h3>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
           <div className="flex flex-col gap-2">

@@ -8,7 +8,7 @@ const AIAlerts = ({ token }) => {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:8080/api/alerts?size=20&sort=createdAt,desc', {
+      const res = await axios.get('/api/alerts?size=20&sort=createdAt,desc', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlerts(res.data.content || res.data);
@@ -32,7 +32,7 @@ const AIAlerts = ({ token }) => {
 
   const handleAction = async (id, action) => {
     try {
-      await axios.put(`http://localhost:8080/api/alerts/${id}/${action}`, {}, {
+      await axios.put(`/api/alerts/${id}/${action}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // SSE will handle the UI update usually, but we can optimistic update or refetch
@@ -100,3 +100,7 @@ const AIAlerts = ({ token }) => {
         )}
       </div>
     </div>
+  );
+};
+
+export default AIAlerts;

@@ -11,7 +11,7 @@ function DeviceDetailsModal({ deviceId, token, onClose, onGetPrediction }) {
       try {
         setLoading(true);
         const res = await axios.get(
-          `http://localhost:8080/api/medical-devices/${deviceId}`,
+          `/api/medical-devices/${deviceId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -29,6 +29,21 @@ function DeviceDetailsModal({ deviceId, token, onClose, onGetPrediction }) {
       fetchDeviceDetails();
     }
   }, [deviceId, token]);
+
+  const handleDeleteDevice = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${device?.name || "this device"}? This action is irreversible.`)) return;
+
+    try {
+      await axios.delete(`/api/medical-devices/${deviceId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      onClose();
+      window.location.reload();
+    } catch (err) {
+      console.error("Failed to delete device:", err);
+      alert(`Delete Failed: ${err.response?.data?.message || err.message}`);
+    }
+  };
 
   if (!deviceId) return null;
 
@@ -129,10 +144,14 @@ function DeviceDetailsModal({ deviceId, token, onClose, onGetPrediction }) {
                       <span
                         className={`px-3 py-1 rounded-[8px] text-[12px] font-bold border ${
                           device.status?.toUpperCase() === "ACTIVE"
-                            ? "bg-color-green/10 border-color-green text-color-green"
+                            ? "bg-green-500/10 border-green-500/30 text-green-400"
                             : device.status?.toUpperCase() === "PASSIVE"
-                              ? "bg-color-red/10 border-color-red text-color-red"
-                              : "bg-color-purple/10 border-color-purple text-color-purple"
+                              ? "bg-red-500/10 border-red-500/30 text-red-400"
+                              : device.status?.toUpperCase() === "MAINTENANCE"
+                                ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                                : device.status?.toUpperCase() === "OUT_OF_SERVICE"
+                                  ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                                  : "bg-color-purple/10 border-color-purple text-color-purple"
                         }`}
                       >
                         {device.status}
@@ -186,10 +205,17 @@ function DeviceDetailsModal({ deviceId, token, onClose, onGetPrediction }) {
 
         {/* Footer Actions */}
         {!loading && !error && (
-          <div className="p-6 bg-color-gray1 border-t border-color-white/5 flex justify-end">
+          <div className="p-6 bg-color-gray1 border-t border-color-white/5 flex justify-end gap-3">
+            <button
+              onClick={handleDeleteDevice}
+              className="px-6 py-3 bg-color-red/10 border border-color-red/25 text-color-red rounded-[8px] font-bold text-sm hover:bg-color-red hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              Delete Device
+            </button>
             <button
               onClick={() => onGetPrediction(device)}
-              className="w-full sm:w-auto px-10 py-3 bg-color-purple text-white rounded-[8px] font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
+              className="px-8 py-3 bg-color-purple text-white rounded-[8px] font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
               Get AI Prediction

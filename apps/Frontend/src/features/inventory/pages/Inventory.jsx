@@ -32,26 +32,28 @@ function Inventory() {
   const getDevices = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8080/api/medical-devices?size=1000",
+        "/api/medical-devices?size=1000",
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
       setDevices(res.data.content || res.data);
     } catch (e) {
+      console.log(e);
     }
   };
 
   const getDepartments = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8080/api/departments?size=1000",
+        "/api/departments?size=1000",
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
       setDepartments(res.data.content || res.data);
     } catch (e) {
+      console.log(e);
     }
   };
 
@@ -92,7 +94,7 @@ function Inventory() {
     ) {
       return false;
     }
-    if (filters.status && device.status !== filters.status) {
+    if (filters.status && device.status?.toUpperCase() !== filters.status.toUpperCase()) {
       return false;
     }
     if (filters.purchaseDate && device.purchaseDate !== filters.purchaseDate) {
@@ -348,18 +350,17 @@ function Inventory() {
                 </td>
                 <td className="py-4 pr-4">
                   <span
-                    className={`px-3 py-1 rounded-full text-[13px] font-medium border ${
+                    className={`px-3 py-1 rounded-full text-[13px] font-semibold border ${
                       device.status?.toUpperCase() === "ACTIVE"
-                        ? "bg-color-green/10 border-color-green text-color-green"
+                        ? "bg-green-500/10 border-green-500/30 text-green-400"
                         : device.status?.toUpperCase() === "PASSIVE"
-                          ? "bg-color-red/10 border-color-red text-color-red"
+                          ? "bg-red-500/10 border-red-500/30 text-red-400"
                           : device.status?.toUpperCase() === "SEMI_ACTIVE"
-                            ? "bg-sky-500/10 border-sky-500 text-sky-500"
+                            ? "bg-sky-500/10 border-sky-500/30 text-sky-400"
                             : device.status?.toUpperCase() === "MAINTENANCE"
-                              ? "bg-color-warning/10 border-color-warning text-[#EAE546]"
-                              : device.status?.toUpperCase() ===
-                                  "OUT_OF_SERVICE"
-                                ? "bg-color-pink/10 border-color-pink text-color-pink"
+                              ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                              : device.status?.toUpperCase() === "OUT_OF_SERVICE"
+                                ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
                                 : "bg-color-white/10 border-color-white/20 text-color-white/80"
                     }`}
                   >

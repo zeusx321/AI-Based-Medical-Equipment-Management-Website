@@ -35,7 +35,7 @@ function AddDevice({ addOpen, setAddOpen, departments, refreshDevices }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:8080/api/medical-devices", formData, {
+      await axios.post("/api/medical-devices", formData, {
         headers: {
           Authorization: `Bearer ${token}`
         }

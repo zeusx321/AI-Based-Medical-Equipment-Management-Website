@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import sendIcon from "../../../assets/Email_Send.svg";
+import closeIcon from "../../../assets/Close.svg";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
 function ChatBot({ username }) {
@@ -19,6 +21,50 @@ function ChatBot({ username }) {
   const token = localStorage.getItem("token");
   const messagesRef = useRef();
   const [aiThinking, setAiThinking] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyList, setHistoryList] = useState([]);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await axios.get("/api/ai/chat/history?size=100", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHistoryList(res.data.content || []);
+    } catch (e) {
+      console.error("Failed to fetch chat history:", e);
+    }
+  };
+
+  const handleSelectSession = (session) => {
+    setSessionId(session.sessionId);
+    setChat(session.messages);
+    setRes("started");
+    setHistoryOpen(false);
+  };
+
+  // Group messages by sessionId, preserving order
+  const sessions = [];
+  const sessionMap = {};
+
+  historyList.forEach((msg) => {
+    const sId = msg.sessionId;
+    if (!sessionMap[sId]) {
+      sessionMap[sId] = {
+        sessionId: sId,
+        title: msg.userMessage,
+        messages: [],
+        createdAt: msg.createdAt
+      };
+      sessions.push(sessionMap[sId]);
+    }
+    sessionMap[sId].messages.push(msg);
+  });
+
+  sessions.forEach((s) => {
+    s.messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  });
+
+  sessions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const AiRes = async (e) => {
     e.preventDefault();
@@ -31,7 +77,7 @@ function ChatBot({ username }) {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/ai/chat",
+        "/api/ai/chat",
         {
           sessionId: sessionId,
           message: req,
@@ -71,6 +117,24 @@ function ChatBot({ username }) {
 
   return (
     <div className="relative h-[calc(100vh-100px)] w-full flex flex-col justify-between items-center pt-4">
+      {/* Top Header Bar */}
+      <div className="w-full max-w-[800px] px-4 flex justify-between items-center pb-2 border-b border-color-white/5">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-color-purple animate-pulse" />
+          <span className="text-[14px] font-bold text-white tracking-wide">MedicalEqu AI Assistant</span>
+        </div>
+        <button
+          onClick={() => {
+            fetchHistory();
+            setHistoryOpen(true);
+          }}
+          className="p-2 hover:bg-color-white/5 rounded-[8px] transition-all text-color-white/60 hover:text-white cursor-pointer flex items-center gap-1.5"
+          title="Chat History"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="10"></circle></svg>
+          <span className="text-[12px] font-bold">History</span>
+        </button>
+      </div>
       
       {/* Welcome Message or Chat Messages */}
       <div className={`w-full flex-1 flex flex-col items-center overflow-hidden ${res === "" ? "justify-center" : ""}`}>
@@ -163,6 +227,78 @@ function ChatBot({ username }) {
           </button>
         </form>
       </div>
+
+      {/* Sidebar Overlay */}
+      <AnimatePresence>
+        {historyOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setHistoryOpen(false)}
+              className="absolute inset-0 z-40 bg-black/60 backdrop-blur-xs cursor-pointer rounded-[12px]"
+            />
+
+            {/* Sidebar Panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="absolute right-0 top-0 bottom-0 w-80 z-50 bg-color-gray1 border-l border-color-white/10 p-6 flex flex-col gap-6 shadow-2xl rounded-r-[12px]"
+            >
+              {/* Sidebar Header */}
+              <div className="flex justify-between items-center border-b border-color-white/5 pb-4">
+                <div className="flex items-center gap-2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                  <h3 className="font-bold text-[16px] text-white">Chat History</h3>
+                </div>
+                <button
+                  onClick={() => setHistoryOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-color-white/5 text-color-white/40 hover:text-white transition-all cursor-pointer"
+                >
+                  <img src={closeIcon} alt="Close" className="w-4" />
+                </button>
+              </div>
+
+              {/* Sidebar List */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1">
+                {sessions.length === 0 ? (
+                  <div className="text-center py-12 text-color-white/30 text-[13px] font-medium">
+                    No past chat sessions found.
+                  </div>
+                ) : (
+                  sessions.map((session) => (
+                    <button
+                      key={session.sessionId}
+                      onClick={() => handleSelectSession(session)}
+                      className={`w-full text-left p-3.5 rounded-[8px] border transition-all flex flex-col gap-1 cursor-pointer
+                        ${sessionId === session.sessionId
+                          ? "bg-color-purple/15 border-color-purple text-white"
+                          : "bg-color-gray2/40 border-color-white/5 hover:border-color-white/10 hover:bg-color-white/[0.02] text-color-white/60 hover:text-white"
+                        }`}
+                    >
+                      <span className="text-[13px] font-bold truncate w-full">
+                        {session.title || "Untitled Chat"}
+                      </span>
+                      <span className="text-[11px] font-medium text-color-white/30">
+                        {new Date(session.createdAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -30,6 +30,7 @@ function Signup() {
     const [passwordFocus, setPasswordFocus] = useState(false);
 
     const [errMsg, setErrMsg] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (userRef.current) {
@@ -43,20 +44,26 @@ function Signup() {
             setErrMsg('Invalid User Name');
             return;
         }else if(!validPassword){
-            setErrMsg('Invalid Password');
+            setErrMsg('Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character');
             return;
         }
 
+        setLoading(true);
         try{
-            const result = await axios.post("http://localhost:8080/api/auth/register", {
+            const result = await axios.post("/api/auth/register", {
                 username: user,
                 email: email,
                 password: password,
                 
             })
-            const userData = result.data;
+            const userData = { ...result.data };
+            const accessToken = userData.accessToken || userData.token;
+            
+            delete userData.accessToken;
+            delete userData.refreshToken;
+            delete userData.token;
 
-            localStorage.setItem("token", userData.token);
+            localStorage.setItem("token", accessToken);
             localStorage.setItem("user", JSON.stringify(userData));
 
             const highestRole = getHighestRole(userData.roles);
@@ -67,10 +74,23 @@ function Signup() {
             }
             
         }catch(err){
-            if (validName && validPassword) {
-                setErrMsg("User Already Exist");
+            if (err.response && err.response.data) {
+                const data = err.response.data;
+                if (data.fieldErrors && data.fieldErrors.password) {
+                    setErrMsg(data.fieldErrors.password);
+                } else if (data.fieldErrors && Object.keys(data.fieldErrors).length > 0) {
+                    const firstErrorKey = Object.keys(data.fieldErrors)[0];
+                    setErrMsg(data.fieldErrors[firstErrorKey]);
+                } else if (data.message) {
+                    setErrMsg(data.message);
+                } else {
+                    setErrMsg("Registration failed. Please check your details.");
+                }
+            } else {
+                setErrMsg("Network error or server is down. Please try again later.");
             }
-            
+        } finally {
+            setLoading(false);
         }
         
     }
@@ -88,13 +108,13 @@ function Signup() {
                         <p className='text-center text-[15px] text-color-white/40 w-[80%]'>Create your account to get started and access all features in one place.</p>
                     </div>
 
-                    <div className={`flex gap-3 bg-color-red/5 p-4 rounded-[12px] border border-color-red
+                    <div className={`flex gap-3 bg-color-red/10 border border-color-red/35 p-4 rounded-[12px] transition-all duration-300 shadow-md shadow-color-red/5 items-start animate-fade-in-slide-down
                     ${errMsg != "" ? '' : "hidden"}
                     `}>
-                        <div>
-                            <img src={redInfoIcon} alt="Red Info" className="w-6" />
+                        <div className="shrink-0 mt-0.5">
+                            <img src={redInfoIcon} alt="Red Info" className="w-5 h-5 object-contain" />
                         </div>
-                        <h2 className="text-color-red font-semibold">{errMsg}</h2>
+                        <h2 className="text-color-red font-semibold text-[14px] leading-relaxed select-text">{errMsg}</h2>
                     </div>
                     
                     <form onSubmit={postRegister} className='flex flex-col gap-5'>
@@ -188,8 +208,24 @@ function Signup() {
 
                         </div>
 
-                        <button type='submit' className='w-full h-12 max-sm:h-11 bg-color-white rounded-full text-color-gray1 font-medium'>
-                            Sign Up
+                        <button 
+                            type='submit' 
+                            disabled={loading}
+                            className={`w-full h-12 max-sm:h-11 bg-color-white rounded-full text-color-gray1 font-medium flex items-center justify-center gap-2 transition-all duration-200
+                            ${loading ? 'opacity-75 cursor-not-allowed scale-[0.98]' : 'hover:opacity-90 active:scale-[0.98]'}
+                            `}
+                        >
+                            {loading ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Signing up...</span>
+                                </>
+                            ) : (
+                                "Sign Up"
+                            )}
                         </button>
 
                     </form>

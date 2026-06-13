@@ -14,6 +14,8 @@ import alertGreenIcon from "../../../assets/Error-Green.svg";
 import LineGraph from "../../../components/ui/LineGraph";
 import SystemAlerts from "../../analysis/components/SystemAlerts";
 import { getHighestRole } from "../../../utils/roleUtils";
+import DepartmentsManagement from "../components/DepartmentsManagement";
+import RolesManagement from "../components/RolesManagement";
 
 function AdminRole() {
   const token = localStorage.getItem("token");
@@ -24,7 +26,7 @@ function AdminRole() {
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const result = await axios.get("http://localhost:8080/api/users", {
+        const result = await axios.get("/api/users", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -46,9 +48,11 @@ function AdminRole() {
     : [];
 
   const [userRole, setUserRole] = useState("");
+  const [userRoles, setUserRoles] = useState([]);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userDeleted, setUserDeleted] = useState("");
+  const [userEnabled, setUserEnabled] = useState(false);
   const [userColor, setUserColor] = useState();
   const [userID, setUserID] = useState();
   const [editOpen, setEditOpen] = useState(false);
@@ -65,7 +69,7 @@ function AdminRole() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in duration-700">
       {/*  ==== Stats Grid ====  */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         {adminRoleCards.map((items, index) => (
           <Card
             key={index}
@@ -171,25 +175,30 @@ function AdminRole() {
                       </span>
                     </td>
                     <td className="py-3.5 pr-4">
-                      <span
-                        className={`px-4 py-1.5 rounded-full text-[16px] font-bold border ${
-                          getHighestRole(items.roles) === "ROLE_ADMIN"
-                            ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
-                            : getHighestRole(items.roles) === "ROLE_USER"
-                              ? "bg-sky-500/10 border-sky-500 text-sky-400"
-                              : "bg-color-pink/10 border-color-pink text-color-pink"
-                        }`}
-                      >
-                        {getHighestRole(items.roles) === "ROLE_ADMIN"
-                          ? "Admin"
-                          : getHighestRole(items.roles) === "ROLE_USER"
-                            ? "User"
-                            : "Biomedical"}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {items.roles && Array.from(items.roles).map((role) => (
+                          <span
+                            key={role}
+                            className={`px-3 py-1 rounded-full text-[14px] font-bold uppercase tracking-wider border ${
+                              role === "ROLE_ADMIN"
+                                ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
+                                : role === "ROLE_USER"
+                                  ? "bg-sky-500/10 border-sky-500 text-sky-400"
+                                  : "bg-color-pink/10 border-color-pink text-color-pink"
+                            }`}
+                          >
+                            {role === "ROLE_ADMIN"
+                              ? "Admin"
+                              : role === "ROLE_USER"
+                                ? "User"
+                                : "Biomedical"}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="py-3.5 pr-4">
                       <span
-                        className={`px-4 py-1.5 rounded-full text-[16px] font-bold border ${
+                        className={`inline-block px-3 py-1 rounded-full text-[14px] font-bold uppercase tracking-wider border ${
                           items.deleted
                             ? "bg-color-red/10 border-color-red text-color-red"
                             : items.enabled
@@ -211,8 +220,10 @@ function AdminRole() {
                           setEditOpen(true);
                           setUserName(items.username);
                           setUserDeleted(items.deleted);
+                          setUserEnabled(items.enabled);
                           setUserEmail(items.email);
                           setUserRole(getHighestRole(items.roles));
+                          setUserRoles(items.roles ? Array.from(items.roles) : []);
                           setUserColor(index % colors.length);
                           setUserID(items.id);
                         }}
@@ -240,12 +251,20 @@ function AdminRole() {
           editOpen={editOpen}
           setEditOpen={setEditOpen}
           userRole={userRole}
+          userRoles={userRoles}
           userName={userName}
           userEmail={userEmail}
           userDeleted={userDeleted}
+          userEnabled={userEnabled}
           userColor={userColor}
           userID={userID}
         />
+      </div>
+
+      {/*  ==== Departments & Roles Management Section ====  */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <DepartmentsManagement />
+        <RolesManagement />
       </div>
 
       {/*  ==== Alerts & Year View Section ====  */}

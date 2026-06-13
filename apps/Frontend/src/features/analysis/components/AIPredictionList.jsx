@@ -10,10 +10,10 @@ const AIPredictionList = ({ token }) => {
     const fetchData = async () => {
       try {
         const [predRes, devRes] = await Promise.all([
-          axios.get('http://localhost:8080/api/ai/predictions?size=100', {
+          axios.get('/api/ai/predictions?size=100', {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get('http://localhost:8080/api/medical-devices?size=100', {
+          axios.get('/api/medical-devices?size=100', {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);

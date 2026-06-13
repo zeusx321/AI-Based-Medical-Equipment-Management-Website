@@ -31,6 +31,7 @@ function CreateAccount({addOpen, setAddOpen}) {
   const [passwordFocus, setPasswordFocus] = useState(false);
 
   const [errMsg, setErrMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (userRef.current) {
@@ -44,13 +45,14 @@ function CreateAccount({addOpen, setAddOpen}) {
       setErrMsg("Invalid User Name");
       return;
     } else if (!validPassword) {
-      setErrMsg("Invalid Password");
+      setErrMsg("Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character");
       return;
     }
 
+    setLoading(true);
     try {
       const result = await axios.post(
-        "http://localhost:8080/api/auth/register",
+        "/api/auth/register",
         {
           username: user,
           email: email,
@@ -58,17 +60,37 @@ function CreateAccount({addOpen, setAddOpen}) {
         },
       );
       
-    setAddOpen(false);
+      setAddOpen(false);
       
     } catch (err) {
-      if (validName && validPassword) {
-        setErrMsg("User Already Exist");
+      if (err.response && err.response.data) {
+        const data = err.response.data;
+        if (data.fieldErrors && data.fieldErrors.password) {
+          setErrMsg(data.fieldErrors.password);
+        } else if (data.fieldErrors && Object.keys(data.fieldErrors).length > 0) {
+          const firstErrorKey = Object.keys(data.fieldErrors)[0];
+          setErrMsg(data.fieldErrors[firstErrorKey]);
+        } else if (data.message) {
+          setErrMsg(data.message);
+        } else {
+          setErrMsg("Registration failed. Please check details.");
+        }
+      } else {
+        setErrMsg("Network error or server is down. Please try again later.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <form onSubmit={postRegister} className="flex w-full flex-col gap-6">
+      {errMsg && (
+        <div className="flex gap-3 bg-color-red/10 border border-color-red/25 p-4 rounded-[8px] items-start animate-fade-in-slide-down shadow-md shadow-color-red/5">
+          <img src={redInfoIcon} alt="Red Info" className="w-5 h-5 shrink-0 mt-0.5 object-contain" />
+          <h2 className="text-color-red/95 text-[13px] font-semibold leading-relaxed select-text">{errMsg}</h2>
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         <label className="text-[13px] font-bold text-color-white/60 uppercase tracking-wide">Email Address</label>
         <input
@@ -142,9 +164,21 @@ function CreateAccount({addOpen, setAddOpen}) {
 
       <button
         type="submit"
-        className="w-full h-12 bg-color-purple text-white rounded-[8px] font-bold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all mt-2"
+        disabled={loading}
+        className={`w-full h-12 bg-color-purple text-white rounded-[8px] font-bold text-[14px] flex items-center justify-center gap-2 transition-all duration-200 mt-2
+        ${loading ? 'opacity-75 cursor-not-allowed scale-[0.98]' : 'hover:opacity-90 active:scale-[0.98]'}`}
       >
-        Create Account
+        {loading ? (
+          <>
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Creating Account...</span>
+          </>
+        ) : (
+          "Create Account"
+        )}
       </button>
     </form>
   );

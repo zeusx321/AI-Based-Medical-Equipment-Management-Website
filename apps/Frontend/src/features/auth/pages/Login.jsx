@@ -20,6 +20,7 @@ function Login() {
   const [passwordFocus, setPasswordFocus] = useState(false);
 
   const [errMsg, setErrMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (userRef.current) {
@@ -43,20 +44,24 @@ function Login() {
 
   const postRegister = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       const result = await axios.post(
-        "http://localhost:8080/api/auth/login",
+        "/api/auth/login",
         {
           username: user,
           password: password,
         },
       );
       setErrMsg("");
-      const userData = result.data;
+      const userData = { ...result.data };
+      const accessToken = userData.accessToken;
+      
+      delete userData.accessToken;
+      delete userData.refreshToken;
 
-      localStorage.setItem("token", userData.accessToken);
-      localStorage.setItem("refreshToken", userData.refreshToken);
+      localStorage.setItem("token", accessToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
       const highestRole = getHighestRole(userData.roles);
@@ -66,7 +71,22 @@ function Login() {
         navigator("/main/dashboard/userrole"); // Fallback
       }
     } catch (err) {
-      setErrMsg("Invalid Username or Password");
+      if (err.response && err.response.data) {
+        const { status, data } = err.response;
+        if (status === 429) {
+          setErrMsg(data.message || "Too many requests — please try again later");
+        } else if (status === 401) {
+          setErrMsg(data.message || "Authentication failed");
+        } else if (data.message) {
+          setErrMsg(data.message);
+        } else {
+          setErrMsg("Invalid Username or Password");
+        }
+      } else {
+        setErrMsg("Network error or server is down. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,13 +105,13 @@ function Login() {
             </p>
           </div>
 
-          <div className={`flex gap-3 bg-color-red/5 p-4 rounded-[12px] border border-color-red
+          <div className={`flex gap-3 bg-color-red/10 border border-color-red/35 p-4 rounded-[12px] transition-all duration-300 shadow-md shadow-color-red/5 items-start animate-fade-in-slide-down
             ${errMsg != "" ? '' : "hidden"}
             `}>
-            <div>
-                <img src={redInfoIcon} alt="Red Info" className="w-6" />
+            <div className="shrink-0 mt-0.5">
+                <img src={redInfoIcon} alt="Red Info" className="w-5 h-5 object-contain" />
             </div>
-            <h2 className="text-color-red font-semibold">{errMsg}</h2>
+            <h2 className="text-color-red font-semibold text-[14px] leading-relaxed select-text">{errMsg}</h2>
           </div>
 
           <form onSubmit={postRegister} className="flex flex-col gap-5">
@@ -136,9 +156,22 @@ function Login() {
 
             <button
               type="submit"
-              className="w-full h-12 max-sm:h-11 bg-color-white rounded-full text-color-gray1 font-medium"
+              disabled={loading}
+              className={`w-full h-12 max-sm:h-11 bg-color-white rounded-full text-color-gray1 font-medium flex items-center justify-center gap-2 transition-all duration-200
+              ${loading ? 'opacity-75 cursor-not-allowed scale-[0.98]' : 'hover:opacity-90 active:scale-[0.98]'}
+              `}
             >
-              Log in
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Logging in...</span>
+                </>
+              ) : (
+                "Log in"
+              )}
             </button>
           </form>
 

@@ -14,8 +14,8 @@ export const getHighestRole = (roles) => {
 
   // Sort roles based on priority (lower number is higher priority)
   const sortedRoles = [...roles].sort((a, b) => {
-    const priorityA = ROLE_PRIORITY[a] || 999;
-    const priorityB = ROLE_PRIORITY[b] || 999;
+    const priorityA = ROLE_PRIORITY[a] !== undefined ? ROLE_PRIORITY[a] : 2;
+    const priorityB = ROLE_PRIORITY[b] !== undefined ? ROLE_PRIORITY[b] : 2;
     return priorityA - priorityB;
   });
 
@@ -31,11 +31,11 @@ export const getDashboardPath = (role) => {
   switch (role) {
     case "ROLE_ADMIN":
       return "/main/dashboard/adminrole";
-    case "ROLE_BIOMED":
-      return "/main/dashboard/biomedrole";
     case "ROLE_USER":
       return "/main/dashboard/userrole";
     default:
-      return "/login";
+      // Fallback for ROLE_BIOMED and any other custom roles
+      return "/main/dashboard/biomedrole";
   }
 };
+

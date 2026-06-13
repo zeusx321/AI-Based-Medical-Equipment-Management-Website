@@ -1,5 +1,5 @@
 import React from 'react'
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import Notification from '../ui/Notification'
 import whiteSearchIcon from '../../assets/White-Search.svg'
 import ringIcon from '../../assets/Ring.svg'
@@ -18,19 +18,40 @@ const Header = ({ menu, setMenu, notification, setNotification }) => {
     const [search, setSearch] = useState(false);
     const [userMenu, setUserMenu] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     const userData = JSON.parse(localStorage.getItem("user")) || { 
         name: 'User', 
         email: 'user@example.com' 
     };
 
+    useEffect(() => {
+        const fetchUnreadCount = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+            try {
+                const res = await axios.get('/api/alerts?size=50', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const alerts = res.data.content || res.data || [];
+                const count = alerts.filter(a => a.status === 'NEW').length;
+                setUnreadCount(count);
+            } catch (err) {
+                console.error("Failed to fetch unread count:", err);
+            }
+        };
+
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 15000);
+        return () => clearInterval(interval);
+    }, [notification]);
+
     const handleLogout = async () => {
         try {
             const token = localStorage.getItem("token");
-            const refreshToken = localStorage.getItem("refreshToken") || userData?.refreshToken;
             
-            await axios.post("http://localhost:8080/api/auth/logout", {
-                refreshToken: refreshToken
+            await axios.post("/api/auth/logout", {
+                accessToken: token
             }, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -85,7 +106,7 @@ const Header = ({ menu, setMenu, notification, setNotification }) => {
             </button>
             <div className={`${displayCenter} relative bg-color-gray2 w-[115px] h-[51px] rounded-full`}>
                 <button className={` bg-color-gray3 w-[34px] h-[34px] rounded-full ${displayCenter}
-                ${bgHover}
+                ${bgHover} relative
                 `} 
                 onClick={() => {
                     setNotification(!notification);
@@ -94,6 +115,11 @@ const Header = ({ menu, setMenu, notification, setNotification }) => {
                 }}
                 >    
                     <img src={ringIcon} alt="Ring Icon" className='w-[17px]' />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-color-purple text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-[0_0_8px_rgba(168,85,247,0.6)]">
+                        {unreadCount}
+                      </span>
+                    )}
                 </button>
                 <button 
                     className={`w-[34px] h-[34px] ml-4 rounded-full ${displayCenter} ${bgHover} bg-color-gray3`}

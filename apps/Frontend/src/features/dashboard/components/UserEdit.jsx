@@ -4,49 +4,47 @@ import trashIcon from '../../../assets/Trash.svg'
 import conformIcon from '../../../assets/Checkmark.svg'
 import closeIcon from '../../../assets/Close.svg'
 
-function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDeleted, userColor, userID}) {
+function UserEdit({editOpen, setEditOpen, userName, userRole, userRoles, userEmail, userDeleted, userEnabled, userColor, userID}) {
 
   const token = localStorage.getItem("token");
   const [ newUserRole, setNewUserRole ] = useState('');
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [modalUserRoles, setModalUserRoles] = useState([]);
+  const [roleToAdd, setRoleToAdd] = useState("");
 
   useEffect(() => {
     if (editOpen) {
       setNewUserRole(userRole);
+      setModalUserRoles(userRoles || []);
+      setRoleToAdd("");
     }
-  }, [editOpen, userRole]);
+  }, [editOpen, userRole, userRoles]);
 
-    const handleUpdate = async () => {
+  useEffect(() => {
+    const fetchAvailableRoles = async () => {
       try {
-        // Matching the documentation strictly to fix validation failure
-        const payload = {
-          username: userName,
-          email: userEmail,
-          password: "", // Accepted but ignored according to rules
-          enabled: !userDeleted
-        };
-
-
-        const res = await axios.put(`http://localhost:8080/api/users/${userID}`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const res = await axios.get("/api/roles", {
+          headers: { Authorization: `Bearer ${token}` }
         });
-
-        setEditOpen(false);
-        window.location.reload();
+        setAvailableRoles(res.data);
       } catch (e) {
-        console.error("Update Failed! Response Data:", e.response?.data);
-        console.error("Error Message:", e.message);
-        alert(`Update Failed: ${e.response?.data?.message || e.response?.data?.error || e.message}`);
+        console.error("Failed to fetch roles in edit modal:", e);
       }
-    } 
+    };
 
-    const handleDeactivate = async () => {
-      if (!window.confirm(`Are you sure you want to deactivate user ${userName}?`)) return;
+    if (editOpen) {
+      fetchAvailableRoles();
+    }
+  }, [editOpen]);
+
+ 
+
+    const handleToggleStatus = async () => {
+      const action = userEnabled ? 'deactivate' : 'activate';
+      if (!window.confirm(`Are you sure you want to ${action} user ${userName}?`)) return;
 
       try {
-        const res = await axios.patch(`http://localhost:8080/api/users/${userID}/deactivate`, {}, {
+        await axios.patch(`/api/users/${userID}/${action}`, {}, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -55,11 +53,74 @@ function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDel
         setEditOpen(false);
         window.location.reload();
       } catch (e) {
-        console.error("Deactivate Failed! Response Data:", e.response?.data);
-        console.error("Error Message:", e.message);
-        alert(`Deactivation Failed: ${e.response?.data?.message || e.message}`);
+        console.error(`${action} Failed! Response Data:`, e.response?.data);
+        alert(`Operation Failed: ${e.response?.data?.message || e.message}`);
       }
     };
+
+    const handleDeleteUser = async () => {
+      if (!window.confirm(`Are you sure you want to delete user ${userName}? This action is irreversible.`)) return;
+
+      try {
+        await axios.delete(`/api/users/${userID}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        setEditOpen(false);
+        window.location.reload();
+      } catch (e) {
+        console.error("Delete Failed! Response Data:", e.response?.data);
+        alert(`Delete Failed: ${e.response?.data?.message || e.message}`);
+      }
+    };
+
+    const handleRemoveRole = async (roleName) => {
+      if (modalUserRoles.length <= 1) {
+        alert("User must have at least one role");
+        return;
+      }
+
+      const roleObj = availableRoles.find(r => r.role === roleName);
+      if (!roleObj) return;
+
+      if (!window.confirm(`Are you sure you want to remove the role ${roleName.replace("ROLE_", "")}?`)) return;
+
+      try {
+        await axios.delete(`/api/users/${userID}/roles/${roleObj.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        window.location.reload();
+      } catch (e) {
+        console.error("Failed to remove role:", e);
+        alert(`Failed to remove role: ${e.response?.data?.message || e.message}`);
+      }
+    };
+
+    const handleAddRole = async () => {
+      if (!roleToAdd) return;
+      if (modalUserRoles.includes(roleToAdd)) return;
+
+      const roleObj = availableRoles.find(r => r.role === roleToAdd);
+      if (!roleObj) return;
+
+      try {
+        await axios.post(`/api/users/${userID}/roles/${roleObj.id}`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        window.location.reload();
+      } catch (e) {
+        console.error("Failed to add role:", e);
+        alert(`Failed to add role: ${e.response?.data?.message || e.message}`);
+      }
+    };
+
+    const handleClose = () => {
+      setEditOpen(false);
+    };
+
+    const unassignedRoles = availableRoles.filter(r => !modalUserRoles.includes(r.role));
 
     const colors = ["bg-gradient-to-bl from-indigo-600 to-indigo-700", "bg-gradient-to-tr from-sky-700 to-sky-600", "bg-gradient-to-tr from-green-500 to-green-600", "bg-gradient-to-tr from-amber-500 to-amber-600", "bg-gradient-to-tr from-pink-500 to-pink-600"];
 
@@ -70,7 +131,7 @@ function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDel
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={() => { setEditOpen(false); }}
+        onClick={handleClose}
       />
 
       {/* Modal Container */}
@@ -92,7 +153,7 @@ function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDel
           </div>
           <button
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-color-white/5 transition-all text-color-white/40 hover:text-white"
-            onClick={() => { setEditOpen(false); }}
+            onClick={handleClose}
           >
             <img src={closeIcon} alt="Close" className="w-5" />
           </button>
@@ -111,40 +172,101 @@ function UserEdit({editOpen, setEditOpen, userName, userRole, userEmail, userDel
           </div>
 
           <div className="w-full bg-color-gray2/40 border border-color-white/5 rounded-[8px] p-4 flex flex-col gap-4">
-            <div className="flex justify-between items-center px-2">
-              <label className="text-[13px] font-bold text-color-white/60 uppercase tracking-widest">Access Role</label>
-              <select
-                name="roles"
-                id="roles"
-                value={newUserRole === "ROLE_ADMIN" ? "admin" : newUserRole === "ROLE_BIOMED" ? "biomed" : "user"}
-                className="bg-color-gray1 border border-color-white/10 text-white p-2 rounded-[8px] text-[13px] font-bold focus:outline-none focus:border-color-purple transition-all outline-none cursor-pointer"
-                onChange={(e) => {
-                  setNewUserRole(
-                    e.target.value === "user" ? "ROLE_USER" : e.target.value === "admin" ? "ROLE_ADMIN" : "ROLE_BIOMED"
-                  );
-                }}
-              >
-                <option value="user">Standard User</option>
-                <option value="biomed">Biomedical Engineer</option>
-                <option value="admin">Administrator</option>
-              </select>
+            <div className="flex flex-col gap-2 px-2">
+              <label className="text-[13px] font-bold text-color-white/60 uppercase tracking-widest">Access Roles</label>
+              
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                {modalUserRoles.map((roleName) => (
+                  <div
+                    key={roleName}
+                    className={`px-3 py-1 rounded-full text-[14px] font-bold uppercase tracking-wider border flex items-center gap-1.5 ${
+                      roleName === "ROLE_ADMIN"
+                        ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
+                        : roleName === "ROLE_USER"
+                          ? "bg-sky-500/10 border-sky-500 text-sky-400"
+                          : "bg-color-pink/10 border-color-pink text-color-pink"
+                    }`}
+                  >
+                    <span>
+                      {roleName === "ROLE_ADMIN"
+                        ? "Admin"
+                        : roleName === "ROLE_USER"
+                          ? "User"
+                          : "Biomedical"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRole(roleName)}
+                      className="hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                      title="Remove Role"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {unassignedRoles.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <select
+                    value={roleToAdd}
+                    onChange={(e) => setRoleToAdd(e.target.value)}
+                    className="flex-1 bg-color-gray1 border border-color-white/10 text-white p-2 rounded-[8px] text-[13px] font-bold focus:outline-none focus:border-color-purple transition-all outline-none cursor-pointer"
+                  >
+                    <option value="">Select role to add...</option>
+                    {unassignedRoles.map((r) => {
+                      const cleanName = r.role.replace("ROLE_", "");
+                      const displayName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase();
+                      return (
+                        <option key={r.id} value={r.role}>
+                          {displayName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAddRole}
+                    className="bg-color-purple text-white px-4 py-2 rounded-[8px] font-bold text-[13px] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center px-2 pt-4 border-t border-color-white/5">
+              <label className="text-[13px] font-bold text-color-white/60 uppercase tracking-widest">Status</label>
+              {userDeleted ? (
+                <span className="px-3 py-1 rounded-full text-[14px] font-bold uppercase tracking-wider border bg-color-red/10 border-color-red text-color-red">
+                  Deleted
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleToggleStatus}
+                  className={`px-3 py-1 rounded-full text-[14px] font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5
+                    ${userEnabled
+                      ? 'bg-color-green/10 border border-color-green text-color-green hover:bg-color-green/20'
+                      : 'bg-orange-500/10 border border-orange-500 text-orange-400 hover:bg-orange-500/20'
+                    }`}
+                >
+                  {userEnabled ? "Deactivate" : "Activate"}
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="flex gap-3 w-full">
-            <button
-              className="flex-1 p-3 bg-color-purple text-white rounded-[8px] font-bold text-[14px] flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95"
-              onClick={handleUpdate}
-            >
-              <img src={conformIcon} alt="Check" className="w-5" />
-              Update Access
-            </button>
+          <div className="w-full">
             <button 
-              onClick={handleDeactivate}
-              className="p-3 px-5 bg-color-red/10 border border-color-red/20 text-color-red rounded-[8px] font-bold text-[14px] flex items-center justify-center gap-2 transition-all hover:bg-color-red hover:text-white active:scale-95"
+              onClick={handleDeleteUser}
+              className="w-full p-3 bg-color-red/10 border border-color-red/20 text-color-red rounded-[8px] font-bold text-[14px] flex items-center justify-center gap-2 transition-all hover:bg-color-red hover:text-white active:scale-95 cursor-pointer"
             >
               <img src={trashIcon} alt="Trash" className="w-5" />
-              Deactivate
+              Delete User
             </button>
           </div>
         </div>

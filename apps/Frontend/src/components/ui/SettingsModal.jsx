@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -26,6 +26,7 @@ const Toggle = ({ enabled, onToggle }) => (
 
 function SettingsModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("profile");
+
   const { isDark, toggleTheme } = useTheme();
   const [notifToggles, setNotifToggles] = useState({
     email: true,
@@ -101,7 +102,7 @@ function SettingsModal({ isOpen, onClose }) {
       };
 
       const response = await axios.put(
-        `http://localhost:8080/api/users/${userId}`,
+        `/api/users/${userId}`,
         payload,
         {
           headers: {
@@ -125,6 +126,8 @@ function SettingsModal({ isOpen, onClose }) {
       setLoading(false);
     }
   };
+
+  const isAdmin = userData.roles && userData.roles.includes("ROLE_ADMIN");
 
   const tabs = [
     { id: "profile", label: "Profile", icon: userIcon },
@@ -225,6 +228,7 @@ function SettingsModal({ isOpen, onClose }) {
                         {activeTab === "profile" && "Manage your personal account details"}
                         {activeTab === "general" && "Personalize your workspace experience"}
                         {activeTab === "notifications" && "Configure system alert preferences"}
+                        {activeTab === "roles" && "Configure and manage available user roles"}
                       </p>
                     </div>
                   </div>
@@ -324,7 +328,7 @@ function SettingsModal({ isOpen, onClose }) {
                         </div>
                         <div className="space-y-2">
                           <label className="text-[13px] font-bold text-color-white/60 uppercase tracking-wide">
-                            Account Security
+                            Account Password
                           </label>
                           <input
                             type="password"
@@ -460,24 +464,28 @@ function SettingsModal({ isOpen, onClose }) {
                         ))}
                       </motion.div>
                     )}
+
+
                   </AnimatePresence>
                 </div>
 
                 {/* Footer */}
                 <div className="px-6 py-5 border-t border-color-white/5 flex justify-end gap-3 bg-color-gray1/50">
-                  <button
-                    onClick={onClose}
-                    className="px-6 py-2.5 rounded-[8px] text-[14px] font-bold text-color-white/40 hover:text-white hover:bg-color-white/5 transition-all"
-                  >
-                    Discard
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={loading}
-                    className={`px-8 py-2.5 rounded-[8px] text-[14px] font-bold bg-color-purple text-white hover:opacity-90 transition-all ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    {loading ? "Updating..." : "Save Changes"}
-                  </button>
+                    <>
+                      <button
+                        onClick={onClose}
+                        className="px-6 py-2.5 rounded-[8px] text-[14px] font-bold text-color-white/40 hover:text-white hover:bg-color-white/5 transition-all cursor-pointer"
+                      >
+                        Discard
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        disabled={loading}
+                        className={`px-8 py-2.5 rounded-[8px] text-[14px] font-bold bg-color-purple text-white hover:opacity-90 transition-all cursor-pointer ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        {loading ? "Updating..." : "Save Changes"}
+                      </button>
+                    </>
                 </div>
               </div>
             </div>
