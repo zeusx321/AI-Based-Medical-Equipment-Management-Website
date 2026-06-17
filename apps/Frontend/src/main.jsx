@@ -6,7 +6,7 @@ import App from "./App.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import axios from "axios";
 
-axios.defaults.baseURL = "http://localhost:8080";
+axios.defaults.baseURL = "https://meditrack-backend.up.railway.app";
 axios.defaults.withCredentials = true;
 
 axios.interceptors.response.use(
@@ -32,7 +32,7 @@ axios.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 createRoot(document.getElementById("root")).render(

@@ -9,6 +9,7 @@ const AIRiskAssessmentList = ({ token }) => {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -227,7 +228,11 @@ const AIRiskAssessmentList = ({ token }) => {
               <tr><td colSpan="5" className="py-8 text-center text-color-white/30 text-sm">No risk assessments found.</td></tr>
             ) : (
               sortedAssessments.map((item, index) => (
-                <tr key={item.assessmentId || index} className="border-b border-color-white/5 hover:bg-color-white/5 duration-100 group">
+                <tr 
+                  key={item.assessmentId || index} 
+                  className="border-b border-color-white/5 hover:bg-color-white/5 duration-100 group cursor-pointer"
+                  onClick={() => setSelectedAssessment(item)}
+                >
                   <td className="py-4 pr-4">
                     <div className="flex flex-col">
                       <span className="text-[14px] font-medium text-white group-hover:text-color-purple transition-colors">{item.deviceName || `Device #${item.deviceId}`}</span>
@@ -553,6 +558,118 @@ const AIRiskAssessmentList = ({ token }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assessment Details Modal */}
+      {selectedAssessment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setSelectedAssessment(null)}
+          />
+
+          {/* Modal Container */}
+          <div className="relative w-full max-w-[500px] max-h-[90vh] bg-color-gray1 border border-color-white/10 rounded-[8px] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-color-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-color-purple/10 flex items-center justify-center text-color-purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[18px] text-white leading-tight">Risk Assessment Details</h3>
+                  <p className="text-[12px] text-color-white/40 font-semibold uppercase tracking-wider">Assessment #{selectedAssessment.assessmentId}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Container */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              
+              {/* Device and Risk Row */}
+              <div className="flex justify-between items-start bg-color-gray2 border border-color-white/5 p-4 rounded-[8px]">
+                <div>
+                  <span className="text-[11px] text-color-white/40 font-bold uppercase tracking-widest block mb-1">Equipment</span>
+                  <h4 className="text-[18px] font-bold text-white leading-tight">{selectedAssessment.deviceName || `Device #${selectedAssessment.deviceId}`}</h4>
+                  <span className="text-[12px] text-color-white/30 font-medium">Device ID: {selectedAssessment.deviceId}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[11px] text-color-white/40 font-bold uppercase tracking-widest block mb-2">Risk Level</span>
+                  <span className={`px-3 py-1.5 rounded-full text-[12px] font-bold border ${getRiskColor(selectedAssessment.riskClass)}`}>
+                    {selectedAssessment.riskLabel ? selectedAssessment.riskLabel.toUpperCase() : 'UNKNOWN'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Confidence Meter */}
+              {selectedAssessment.confidence !== null && (
+                <div className="bg-color-gray2 border border-color-white/5 p-4 rounded-[8px] space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] text-color-white/40 font-bold uppercase tracking-widest">Model Confidence</span>
+                    <span className="text-[14px] font-bold text-white">{(selectedAssessment.confidence * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-color-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${getConfidenceColor(selectedAssessment.riskClass)}`}
+                      style={{ width: `${(selectedAssessment.confidence * 100).toFixed(0)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendation Banner */}
+              <div className="space-y-2">
+                <span className="text-[11px] text-color-white/40 font-bold uppercase tracking-widest block px-1">AI Recommendation</span>
+                <div className={`p-4 rounded-[8px] border leading-relaxed ${
+                  selectedAssessment.riskClass === 2 
+                    ? 'bg-color-red/10 border-color-red/30 text-color-red' 
+                    : selectedAssessment.riskClass === 1 
+                      ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500' 
+                      : selectedAssessment.riskClass === 0
+                        ? 'bg-color-green/10 border-color-green/30 text-color-green'
+                        : 'bg-color-white/5 border-color-white/10 text-color-white/70'
+                }`}>
+                  <p className="text-[13px] font-medium leading-relaxed">
+                    {selectedAssessment.recommendation || "No recommendation provided."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Details List */}
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="bg-color-gray2 border border-color-white/5 p-3 rounded-[8px]">
+                  <span className="text-[10px] text-color-white/30 font-bold uppercase tracking-wider block mb-1">Model Version</span>
+                  <span className="text-[13px] font-bold text-white">{selectedAssessment.modelVersion}</span>
+                </div>
+                <div className="bg-color-gray2 border border-color-white/5 p-3 rounded-[8px]">
+                  <span className="text-[10px] text-color-white/30 font-bold uppercase tracking-wider block mb-1">Inference Status</span>
+                  <span className={`text-[13px] font-bold uppercase ${selectedAssessment.status === 'SUCCESS' ? 'text-color-green' : 'text-orange-400'}`}>{selectedAssessment.status}</span>
+                </div>
+                <div className="bg-color-gray2 border border-color-white/5 p-3 rounded-[8px] col-span-2">
+                  <span className="text-[10px] text-color-white/30 font-bold uppercase tracking-wider block mb-1">Assessment Date</span>
+                  <span className="text-[13px] font-bold text-color-white/80">{new Date(selectedAssessment.createdAt).toLocaleString()}</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-color-white/5 flex justify-end bg-color-gray1/50">
+              <button
+                type="button"
+                onClick={() => setSelectedAssessment(null)}
+                className="px-6 py-2 rounded-[8px] bg-color-purple text-white font-bold text-[13px] hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              >
+                Close Details
+              </button>
+            </div>
           </div>
         </div>
       )}

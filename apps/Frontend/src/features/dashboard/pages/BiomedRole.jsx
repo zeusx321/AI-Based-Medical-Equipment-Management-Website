@@ -9,6 +9,65 @@ function BiomedRole() {
 
   const [devices, setDevices] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [stats, setStats] = useState({
+    totalDevices: 45,
+    totalUsers: 30,
+    activeDepartments: 21,
+    pendingApprovals: 21
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        let totalDevices = stats.totalDevices;
+        try {
+          const devRes = await axios.get("/api/medical-devices?size=1", { headers });
+          totalDevices = devRes.data.totalElements ?? totalDevices;
+        } catch (e) {
+          console.warn("Failed to fetch devices count:", e);
+        }
+
+        let totalUsers = stats.totalUsers;
+        try {
+          const userRes = await axios.get("/api/users", { headers });
+          totalUsers = userRes.data.length ?? totalUsers;
+        } catch (e) {
+          console.warn("Failed to fetch users count:", e);
+        }
+
+        let activeDepartments = stats.activeDepartments;
+        try {
+          const deptRes = await axios.get("/api/departments", { headers });
+          activeDepartments = deptRes.data.length ?? activeDepartments;
+        } catch (e) {
+          console.warn("Failed to fetch departments count:", e);
+        }
+
+        let pendingApprovals = stats.pendingApprovals;
+        try {
+          const maintRes = await axios.get("/api/maintenance-logs?status=PENDING&size=1", { headers });
+          pendingApprovals = maintRes.data.totalElements ?? pendingApprovals;
+        } catch (e) {
+          console.warn("Failed to fetch pending logs count:", e);
+        }
+
+        setStats({
+          totalDevices,
+          totalUsers,
+          activeDepartments,
+          pendingApprovals
+        });
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    };
+
+    if (token) {
+      fetchStats();
+    }
+  }, [token]);
   const [loadingDevices, setLoadingDevices] = useState(true);
   const [loadingLogs, setLoadingLogs] = useState(true);
 
@@ -177,11 +236,38 @@ function BiomedRole() {
     }
   };
 
+  const statsCards = [
+    {
+      title: 'Total Devices',
+      number: stats.totalDevices,
+      status: true,
+      increaseNum: 15
+    },
+    {
+      title: 'Total Users',
+      number: stats.totalUsers,
+      status: false,
+      increaseNum: 12
+    },
+    {
+      title: 'Active Departments',
+      number: stats.activeDepartments,
+      status: true,
+      increaseNum: 1
+    },
+    {
+      title: 'Pending Maintenance',
+      number: stats.pendingApprovals,
+      status: false,
+      increaseNum: 1
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in duration-700">
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        {adminRoleCards.map((items, index) => (
+        {statsCards.map((items, index) => (
           <Card
             key={index}
             title={items.title}

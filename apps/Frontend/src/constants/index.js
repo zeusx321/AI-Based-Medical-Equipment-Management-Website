@@ -96,7 +96,7 @@ export const adminRoleCards = [
         increaseNum: 1
     },
     {
-        title: 'Pending Approvals',
+        title: 'Pending Maintenance',
         number: 21,
         status: false,
         increaseNum: 1

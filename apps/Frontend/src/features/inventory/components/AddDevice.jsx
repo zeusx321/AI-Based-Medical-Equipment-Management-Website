@@ -135,7 +135,7 @@ function AddDevice({ addOpen, setAddOpen, departments, refreshDevices }) {
 
               <div className='flex flex-col gap-2'>
                 <label className='text-[13px] font-bold text-color-white/60 uppercase tracking-wide'>Purchase Price</label>
-                <input type="number" step="0.01" name="purchasePrice" value={formData.purchasePrice} onChange={handleChange} className='bg-color-gray2 border border-color-white/10 rounded-[8px] px-4 py-3 outline-none focus:border-color-purple text-[14px] text-white transition-all' placeholder="e.g. 1500000" />
+                <input type="number" step="1000" name="purchasePrice" value={formData.purchasePrice} onChange={handleChange} className='bg-color-gray2 border border-color-white/10 rounded-[8px] px-4 py-3 outline-none focus:border-color-purple text-[14px] text-white transition-all' placeholder="e.g. 1500000" />
               </div>
 
               <div className='flex flex-col gap-2'>
