@@ -6,9 +6,8 @@ import App from "./App.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import axios from "axios";
 
-axios.defaults.baseURL = import.meta.env.PROD 
-  ? "/" 
-  : "https://meditrack-backend.up.railway.app";
+axios.defaults.baseURL =
+  "https://meditrack-backend-production-a6c7.up.railway.app";
 axios.defaults.withCredentials = true;
 
 // Add Request Interceptor to dynamically inject the latest access token
