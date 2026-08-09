@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const MaintenanceInsights = ({ token }) => {
   const [logs, setLogs] = useState([]);
+  const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -14,7 +15,7 @@ const MaintenanceInsights = ({ token }) => {
   });
   
   const [formData, setFormData] = useState({
-    deviceId: 1,
+    deviceId: '',
     performedById: 1,
     issueDescription: '',
     actionTaken: '',
@@ -42,8 +43,20 @@ const MaintenanceInsights = ({ token }) => {
     }
   };
 
+  const fetchDevices = async () => {
+    try {
+      const res = await axios.get('/api/medical-devices?size=1000', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDevices(res.data.content || res.data || []);
+    } catch (err) {
+      console.error("Error fetching devices:", err);
+    }
+  };
+
   useEffect(() => {
     fetchLogs();
+    fetchDevices();
   }, [token]);
 
   const handleSubmit = async (e) => {
@@ -123,7 +136,7 @@ const MaintenanceInsights = ({ token }) => {
             onClick={() => {
               setEditingLog(null);
               setFormData({
-                deviceId: 1,
+                deviceId: '',
                 performedById: 1,
                 issueDescription: '',
                 actionTaken: '',
@@ -262,15 +275,20 @@ const MaintenanceInsights = ({ token }) => {
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-color-white/60 uppercase tracking-wide">Device ID *</label>
-                  <input 
-                    type="number" 
+                  <label className="text-[13px] font-bold text-color-white/60 uppercase tracking-wide">Select Device *</label>
+                  <select 
                     value={formData.deviceId} 
                     onChange={e => setFormData({...formData, deviceId: e.target.value})} 
-                    className="bg-color-gray2 border border-color-white/10 rounded-[8px] px-4 py-2.5 outline-none focus:border-color-purple text-[14px] text-white transition-all placeholder:text-color-white/10" 
-                    placeholder="e.g. 1"
+                    className="bg-color-gray2 border border-color-white/10 rounded-[8px] px-4 py-2.5 outline-none focus:border-color-purple text-[14px] text-white transition-all cursor-pointer" 
                     required 
-                  />
+                  >
+                    <option value="" disabled>-- Choose Device --</option>
+                    {devices.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} ({d.model || 'N/A'}) - SN: {d.serialNumber}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="flex flex-col gap-2">

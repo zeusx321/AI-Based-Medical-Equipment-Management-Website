@@ -3,7 +3,7 @@ apps/AI/
 apps/Backend/
 
 # Node modules (just in case)
-apps/Frontend/node_modulesy
+apps/Frontend/node_modules
 
 # Local env files
 .env

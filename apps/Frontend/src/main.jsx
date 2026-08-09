@@ -6,30 +6,93 @@ import App from "./App.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import axios from "axios";
 
-axios.defaults.baseURL = "https://meditrack-backend.up.railway.app";
+axios.defaults.baseURL = import.meta.env.PROD 
+  ? "/" 
+  : "https://meditrack-backend.up.railway.app";
 axios.defaults.withCredentials = true;
+
+// Add Request Interceptor to dynamically inject the latest access token
+axios.interceptors.request.use(
+  (config) => {
+    // Skip adding Authorization header for login, register, and refresh endpoints to avoid JwtAuthenticationFilter rejections on expired tokens
+    if (config.url?.includes("/api/auth/")) {
+      return config;
+    }
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 axios.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Skip interceptor queuing/retry if the failed request itself is an auth endpoint to prevent deadlocks
+    if (originalRequest.url?.includes("/api/auth/")) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        const res = await axios.post("/api/auth/refresh");
-        if (res.data.accessToken) {
-          localStorage.setItem("token", res.data.accessToken);
-        }
-        if (originalRequest.headers.Authorization) {
-          originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`;
-        }
-        return axios(originalRequest);
-      } catch (refreshError) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return axios(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      return new Promise(async (resolve, reject) => {
+        try {
+          // Perform the refresh POST request (HttpOnly cookie will be sent automatically)
+          const res = await axios.post("/api/auth/refresh");
+          const newAccessToken = res.data.accessToken;
+
+          if (newAccessToken) {
+            localStorage.setItem("token", newAccessToken);
+          }
+
+          processQueue(null, newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          resolve(axios(originalRequest));
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+          reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      });
     }
     return Promise.reject(error);
   },

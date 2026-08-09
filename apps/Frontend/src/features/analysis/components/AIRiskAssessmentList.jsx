@@ -113,24 +113,24 @@ const AIRiskAssessmentList = ({ token }) => {
     setError("");
     setSuccess("");
 
-    // Prepare payload with correct numeric types
+    // Prepare payload with correct numeric types and keys expected by the backend
     const payload = {
       deviceId: parseInt(formData.deviceId),
-      device_Type: formData.device_Type,
-      manufacturer: formData.manufacturer,
-      model: formData.model,
-      country: formData.country,
-      age: parseFloat(formData.age),
-      maintenance_Cost: parseFloat(formData.maintenance_Cost),
-      downtime: parseFloat(formData.downtime),
-      maintenance_Frequency: parseFloat(formData.maintenance_Frequency),
-      failure_Event_Count: parseInt(formData.failure_Event_Count),
-      maintenance_Class: formData.maintenance_Class,
-      operational_Hours_Est: parseFloat(formData.operational_Hours_Est),
-      expected_Lifespan_Est: parseFloat(formData.expected_Lifespan_Est),
-      mtbf: parseFloat(formData.mtbf),
-      cost_Per_Hour: parseFloat(formData.cost_Per_Hour),
-      lifespan_Usage_Ratio: parseFloat(formData.lifespan_Usage_Ratio)
+      Device_Type: formData.device_Type,
+      Manufacturer: formData.manufacturer,
+      Model: formData.model,
+      Country: formData.country,
+      Age: parseFloat(formData.age),
+      Maintenance_Cost: parseFloat(formData.maintenance_Cost),
+      Downtime: parseFloat(formData.downtime),
+      Maintenance_Frequency: parseFloat(formData.maintenance_Frequency),
+      Failure_Event_Count: parseInt(formData.failure_Event_Count),
+      Maintenance_Class: formData.maintenance_Class,
+      Operational_Hours_Est: parseFloat(formData.operational_Hours_Est),
+      Expected_Lifespan_Est: parseFloat(formData.expected_Lifespan_Est),
+      MTBF: parseFloat(formData.mtbf),
+      Cost_Per_Hour: parseFloat(formData.cost_Per_Hour),
+      Lifespan_Usage_Ratio: parseFloat(formData.lifespan_Usage_Ratio)
     };
 
     try {
